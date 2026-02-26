@@ -110,24 +110,24 @@
     <!-- INITIAL PET PICKER -->
     <div id="pet-picker-overlay" class="hidden fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-6">
         <div class="bg-slate-900 border-4 border-indigo-500 rounded-3xl p-10 max-w-2xl w-full text-center shadow-[0_0_50px_rgba(79,70,229,0.3)]">
-            <h2 class="text-5xl font-black text-white mb-4 italic tracking-tighter uppercase font-black">Rescue Sanctuary</h2>
+            <h2 class="text-5xl font-black text-white mb-4 italic tracking-tighter uppercase font-black">Rescue Mission</h2>
             <p class="text-indigo-300 mb-10 text-xl font-bold">The mission begins! Who will you rescue first?</p>
             <div class="grid grid-cols-2 gap-6 mb-10">
                 <button onclick="pickInitialPet('dog')" class="bg-slate-800 p-6 rounded-2xl hover:bg-indigo-900 transition-all group">
                     <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🐩</span>
-                    <span class="font-black text-xl tracking-widest">DOG TRACK</span>
+                    <span class="font-black text-xl tracking-widest uppercase">Dog Track</span>
                 </button>
                 <button onclick="pickInitialPet('cat')" class="bg-slate-800 p-6 rounded-2xl hover:bg-rose-900 transition-all group">
                     <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🐈</span>
-                    <span class="font-black text-xl tracking-widest">CAT TRACK</span>
+                    <span class="font-black text-xl tracking-widest uppercase">Cat Track</span>
                 </button>
                 <button onclick="pickInitialPet('dragon')" class="bg-slate-800 p-6 rounded-2xl hover:bg-emerald-900 transition-all group">
                     <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🦎</span>
-                    <span class="font-black text-xl tracking-widest">DRAGON TRACK</span>
+                    <span class="font-black text-xl tracking-widest uppercase">Dragon Track</span>
                 </button>
                 <button onclick="pickInitialPet('shark')" class="bg-slate-800 p-6 rounded-2xl hover:bg-cyan-900 transition-all group">
                     <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🦈</span>
-                    <span class="font-black text-xl tracking-widest">SHARK TRACK</span>
+                    <span class="font-black text-xl tracking-widest uppercase">Shark Track</span>
                 </button>
             </div>
         </div>
@@ -283,7 +283,6 @@
                 { word: "right", chinese: "右邊", concept: "正確的方向", icon: "➡️", keyword: "correct side" },
                 { word: "spray", chinese: "噴霧", concept: "小水滴", icon: "💨", keyword: "liquid drops" },
                 { word: "thigh", chinese: "大腿", concept: "腿部上段", icon: "🦵", keyword: "top part legs" },
-                { word: "frighten", chinese: "使害怕", concept: "讓人恐懼", icon: "👻", keyword: "cause afraid" },
                 { word: "eight", chinese: "八", concept: "數字 8", icon: "8️⃣", keyword: "number 8" },
                 { word: "bait", chinese: "誘餌", concept: "引誘獵物", icon: "🪱", keyword: "lure prey" },
                 { word: "raisin", chinese: "葡萄乾", concept: "脫水葡萄", icon: "🍇", keyword: "dried grape" },
@@ -294,7 +293,7 @@
             ],
             7: [
                 { word: "expedition", chinese: "遠征", concept: "特殊目的之旅", icon: "🗺️", keyword: "journey purpose" },
-                { word: "explore", chinese: "探索", concept: "前往新地方", icon: "🔭", keyword: "travel new place" },
+                { word: "explore", chinese: "探索", concept: "前往新地方", icon: " Telescope ", keyword: "travel new place" },
                 { word: "Newfoundland", chinese: "紐芬蘭", concept: "加拿大地名", icon: "🇨🇦", keyword: "part of canada" },
                 { word: "purpose", chinese: "目的", concept: "做事的理由", icon: "🎯", keyword: "reason doing" },
                 { word: "wilderness", chinese: "蠻荒", concept: "原始野地", icon: "🏔️", keyword: "wild natural" },
@@ -366,31 +365,31 @@
         };
 
         const shopItems = [
-            { id: 'dog_kibble', name: 'Kibble', icon: '🦴', cost: 100, target: 'dog', feedback: 'Yummy! 太好吃了!' },
-            { id: 'dog_steak', name: 'Steak', icon: '🥩', cost: 400, target: 'dog', feedback: 'Wuff! Prime taste! 高級美味!' },
+            { id: 'dog_kibble', name: 'Basic Kibble', icon: '🦴', cost: 100, target: 'dog', feedback: 'Yummy! 太好吃了!' },
+            { id: 'dog_steak', name: 'Prime Steak', icon: '🥩', cost: 400, target: 'dog', feedback: 'Wuff! Prime taste! 高級美味!' },
             { id: 'dog_toy', name: 'Rubber Ball', icon: '🎾', cost: 200, target: 'dog', feedback: 'Fetch! So fun! 真好玩!' },
             { id: 'dog_brush', name: 'Gold Brush', icon: '🪮', cost: 600, target: 'dog', feedback: 'Shiny fur! 毛好亮!' },
-            { id: 'dog_frisbee', name: 'Frisbee', icon: '🥏', cost: 1200, target: 'dog', feedback: 'I can fly! 我要飛起來了!' },
-            { id: 'cat_tuna', name: 'Tuna', icon: '🐟', cost: 120, target: 'cat', feedback: 'Purrrr... delicious! 好鮮美的魚!' },
-            { id: 'cat_salmon', name: 'Salmon', icon: '🍣', cost: 450, target: 'cat', feedback: 'I am royalty! 我是貴族!' },
-            { id: 'cat_nip', name: 'Catnip', icon: '🌿', cost: 300, target: 'cat', feedback: 'Zoomies! 我要衝刺了!' },
-            { id: 'cat_wand', name: 'Wand', icon: '🪶', cost: 250, target: 'cat', feedback: 'Cought it! 抓到了!' },
-            { id: 'cat_tower', name: 'Tower', icon: '🏰', cost: 1500, target: 'cat', feedback: 'Castle King! 國王在此!' },
-            { id: 'dr_bug', name: 'Bugs', icon: '🦗', cost: 100, target: 'dragon', feedback: 'Crrrk... tasty! 獵物真美味!' },
-            { id: 'dr_lava', name: 'Lava', icon: '🌋', cost: 500, target: 'dragon', feedback: 'Fiery taste! 燙燙的力量!' },
-            { id: 'dr_lamp', name: 'Lamp', icon: '💡', cost: 800, target: 'dragon', feedback: 'Warmth! 能量爆發!' },
-            { id: 'dr_ruby', name: 'Ruby', icon: '💎', cost: 1200, target: 'dragon', feedback: 'Shine! 鑽石的力量!' },
-            { id: 'dr_gold', name: 'Gold', icon: '💰', cost: 2000, target: 'dragon', feedback: 'My treasure! 我的寶藏!' },
-            { id: 'sh_shrimp', name: 'Shrimp', icon: '🦐', cost: 150, target: 'shark', feedback: 'Splash! Gulp! 鮮蝦大餐!' },
-            { id: 'sh_squid', name: 'Squid', icon: '🦑', cost: 550, target: 'shark', feedback: 'Big catch! 大獵物!' },
-            { id: 'sh_ring', name: 'Ring', icon: '⭕', cost: 400, target: 'shark', feedback: 'Diving fun! 潛水尋寶!' },
-            { id: 'sh_coral', name: 'Coral', icon: '🪸', cost: 900, target: 'shark', feedback: 'Comfy! 舒服的珊瑚!' },
-            { id: 'sh_crown', name: 'Crown', icon: '👑', cost: 2500, target: 'shark', feedback: 'Master! 海洋霸主!' },
-            { id: 'any_bed', name: 'Bed', icon: '🛏️', cost: 1000, target: 'any', feedback: 'Zzz... 睡得真香!' },
-            { id: 'any_pill', name: 'Pills', icon: '💊', cost: 800, target: 'any', feedback: 'Stronger! 我變強了!' },
-            { id: 'any_cam', name: 'Camera', icon: '📸', cost: 600, target: 'any', feedback: 'Smile! 我好上相!' },
-            { id: 'any_bling', name: 'Collar', icon: '✨', cost: 1300, target: 'any', feedback: 'Sharp! 我好帥!' },
-            { id: 'any_water', name: 'Water', icon: '⛲', cost: 2000, target: 'any', feedback: 'Cool! 太清爽了!' }
+            { id: 'dog_frisbee', name: 'Super Frisbee', icon: '🥏', cost: 1200, target: 'dog', feedback: 'I can fly! 我要飛起來了!' },
+            { id: 'cat_tuna', name: 'Tasty Tuna', icon: '🐟', cost: 120, target: 'cat', feedback: 'Purrrr... delicious! 好鮮美的魚!' },
+            { id: 'cat_salmon', name: 'Sashimi Plate', icon: '🍣', cost: 450, target: 'cat', feedback: 'I am royalty! 我是貴族!' },
+            { id: 'cat_nip', name: 'Catnip Blast', icon: '🌿', cost: 300, target: 'cat', feedback: 'Zoomies! 我要衝刺了!' },
+            { id: 'cat_wand', name: 'Feather Wand', icon: '🪶', cost: 250, target: 'cat', feedback: 'Caught it! 抓到了!' },
+            { id: 'cat_tower', name: 'Castle Tower', icon: '🏰', cost: 1500, target: 'cat', feedback: 'Castle King! 國王在此!' },
+            { id: 'dr_bug', name: 'Live Crickets', icon: '🦗', cost: 100, target: 'dragon', feedback: 'Crrrk... tasty hunt! 獵物真美味!' },
+            { id: 'dr_lava', name: 'Lava Cake', icon: '🌋', cost: 500, target: 'dragon', feedback: 'Fiery taste! 燙燙的力量!' },
+            { id: 'dr_lamp', name: 'Heat Lamp', icon: '💡', cost: 800, target: 'dragon', feedback: 'Warmth! 能量爆發!' },
+            { id: 'dr_ruby', name: 'Fire Ruby', icon: '💎', cost: 1200, target: 'dragon', feedback: 'Shine! 鑽石的力量!' },
+            { id: 'dr_gold', name: 'Gold Pile', icon: '💰', cost: 2000, target: 'dragon', feedback: 'My treasure! 我的寶藏!' },
+            { id: 'sh_shrimp', name: 'Krill Snack', icon: '🦐', cost: 150, target: 'shark', feedback: 'Splash! Gulp! 鮮蝦大餐!' },
+            { id: 'sh_squid', name: 'Giant Squid', icon: '🦑', cost: 550, target: 'shark', feedback: 'Big catch! 大獵物!' },
+            { id: 'sh_ring', name: 'Sinking Ring', icon: '⭕', cost: 400, target: 'shark', feedback: 'Diving fun! 潛水尋寶!' },
+            { id: 'sh_coral', name: 'Brain Coral', icon: '🪸', cost: 900, target: 'shark', feedback: 'Comfy! 舒服的珊瑚!' },
+            { id: 'sh_crown', name: 'Sea Crown', icon: '👑', cost: 2500, target: 'shark', feedback: 'Master! 海洋霸主!' },
+            { id: 'any_bed', name: 'Soft Bed', icon: '🛏️', cost: 1000, target: 'any', feedback: 'Best sleep! 睡得真香!' },
+            { id: 'any_pills', name: 'Power Up Pills', icon: '💊', cost: 800, target: 'any', feedback: 'I feel stronger! 我變強了!' },
+            { id: 'any_cam', name: 'Pet Camera', icon: '📸', cost: 600, target: 'any', feedback: 'Smile! 我好上相!' },
+            { id: 'any_bling', name: 'Bling Collar', icon: '✨', cost: 1300, target: 'any', feedback: 'Looking sharp! 我好帥!' },
+            { id: 'any_water', name: 'Crystal Water', icon: '⛲', cost: 2000, target: 'any', feedback: 'So refreshing! 太清爽了!' }
         ];
 
         const animalTracks = {
@@ -443,6 +442,15 @@
                 { name: "Kraken", icon: "🌊", level_icons: ["🌊", "🐬", "🐋", "🌊"] }
             ]
         };
+
+        const cutePhrases = [
+            "You're the best! 你最棒了!", "So happy! 真開心!", "Love you master! 愛你主人!", "Wow! 哇!", "Delicious! 美味!", "Hehe! 嘿嘿!", "Thank you! 謝謝你!", "I feel great! 我感覺很好!",
+            "You're my hero! 你是我的英雄!", "Best day ever! 最好的一天!", "I feel so loved! 我感覺被愛著!", "Wiggle wiggle! 扭一扭!", "You're so smart! 你真聰明!", "Friends forever! 永遠的朋友!",
+            "Purr-fect! 太完美了!", "Wuff-tastic! 太汪了!", "Dragon power! 龍的力量!", "Shark hug! 鯊魚抱抱!", "Better than treasure! 比寶藏還好!", "Legendary master! 傳奇大師!",
+            "Best rescuer ever! 最棒的救援者!", "You make me so happy! 你讓我好快樂!", "Look at my aura! 看看我的光芒!", "I'm amazing! 我真了不起!", "Hooray! 萬歲!", "I trust you! 我信任你!",
+            "Yay for treats! 點心萬歲!", "My heart is full! 我的心滿滿的!", "I missed you! 我好想你!", "I'm so lucky! 我真幸運!", "You're number one! 你是第一名!", "Gimme more! 再多給我一點!",
+            "I'm feeling strong! 我覺得變強了!", "Super owner! 超級主人!", "Aww yeah! 喔耶!", "I'm blushing! 我害羞了!", "Let's play! 我們玩吧!", "You're so cool! 你真酷!", "Sparkle time! 閃亮時間!"
+        ];
 
         // --- STATE ---
         let state = {
@@ -504,12 +512,12 @@
         }
 
         function save() {
-            localStorage.setItem('pet_rescue_v12_secret_species', JSON.stringify(state));
+            localStorage.setItem('pet_rescue_v12_stable_final', JSON.stringify(state));
             updateUI();
         }
 
         function load() {
-            const saved = localStorage.getItem('pet_rescue_v12_secret_species');
+            const saved = localStorage.getItem('pet_rescue_v12_stable_final');
             if (saved) state = JSON.parse(saved);
             else document.getElementById('pet-picker-overlay').classList.remove('hidden');
             updateUI();
@@ -640,11 +648,15 @@
             
             const newRank = getPetStats(pet).rank;
 
-            // Trigger Movement
+            // FIRST UPDATE UI TO GET NEW ELEMENTS
+            save(); 
+            renderSanctuary(); 
+
+            // THEN TRIGGER EFFECTS ON THE FRESHLY RENDERED ELEMENTS
             const vis = document.getElementById('pet-visual');
             if (vis) {
                 vis.classList.remove('joy-wiggle-y');
-                void vis.offsetWidth;
+                void vis.offsetWidth; // Force reflow
                 vis.classList.add('joy-wiggle-y');
                 setTimeout(() => vis.classList.remove('joy-wiggle-y'), 1500);
             }
@@ -664,51 +676,11 @@
                 msg.classList.add('bg-yellow-500', 'text-black');
                 setTimeout(() => msg.classList.remove('bg-yellow-500', 'text-black'), 3000);
             }
-
-            save(); renderSanctuary();
         }
 
         function showBilingualFeedback(pet, itemText) {
             const container = document.getElementById('bubble-container');
-            const phrases = [
-                "You're the best! 你最棒了!",
-                "So happy! 真開心!",
-                "Love you master! 愛你主人!",
-                "Wow! 哇!",
-                "Delicious! 美味!",
-                "Hehe! 嘿嘿!",
-                "Thank you! 謝謝你!",
-                "I feel great! 我感覺很好!",
-                "You're my hero! 你是我的英雄!",
-                "Best day ever! 最好的一天!",
-                "I feel so loved! 我感覺被愛著!",
-                "Wiggle wiggle! 扭一扭!",
-                "I'm your number one fan! 我是你頭號粉絲!",
-                "Keep up the good work! 繼續加油哦!",
-                "Let's play more! 我們再多玩一點!",
-                "You're so smart! 你真聰明!",
-                "Friends forever! 永遠的朋友!",
-                "Purr-fect! 太完美了!",
-                "Wuff-tastic! 太汪了!",
-                "Dragon power! 龍的力量!",
-                "Shark hug! 鯊魚抱抱!",
-                "Sparkle sparkle! 閃亮閃亮!",
-                "I'm dancing with joy! 我在開心地跳舞!",
-                "Better than treasure! 比寶藏還好!",
-                "Legendary master! 傳奇大師!",
-                "My heart is full! 我的心滿滿的!",
-                "Best rescuer ever! 最棒的救援者!",
-                "I feel so strong! 我覺得很有力量!",
-                "You make me so happy! 你讓我好快樂!",
-                "Look at my aura! 看看我的光芒!",
-                "I'm leveling up! 我正在升級!",
-                "You're amazing! 你真了不起!",
-                "Hooray! 萬歲!",
-                "I trust you! 我信任你!",
-                "This is the life! 這才是生活!"
-            ];
-            
-            const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+            const randomPhrase = cutePhrases[Math.floor(Math.random() * cutePhrases.length)];
             const text = `${itemText} ${randomPhrase}`;
             
             if (container) {
@@ -784,8 +756,8 @@
             const grid = document.getElementById('shelter-grid');
             if (!grid) return; grid.innerHTML = '';
             
-            const types = ['dog', 'cat', 'dragon', 'shark'];
-            types.forEach(type => {
+            const tracks = ['dog', 'cat', 'dragon', 'shark'];
+            tracks.forEach(type => {
                 const available = animalTracks[type].find(a => 
                     !state.ownedPets.some(p => p.name === a.name) && 
                     !state.badges.some(b => b.name === a.name)
@@ -832,7 +804,7 @@
             if (amt < 0) {
                 const msg = document.getElementById('message-box');
                 if (msg) {
-                    msg.textContent = `MISTAKE! -${Math.abs(amt)} COINS. STAY FOCUSED!`;
+                    msg.textContent = `MISTAKE! -${Math.abs(amt)} COINS. FOCUS!`;
                     msg.classList.add('bg-red-700');
                     setTimeout(() => msg.classList.remove('bg-red-700'), 1500);
                 }
@@ -943,10 +915,15 @@
             let s3Idx = 0;
             let isDone = false;
             const run = () => {
-                if(s3Idx >= 8) { isDone = true; completeStage(3); return; }
+                if(s3Idx >= 8) { 
+                    isDone = true; 
+                    el.innerHTML = '<div class="text-4xl font-black text-green-400">ROUND COMPLETE!</div>';
+                    completeStage(3); 
+                    return; 
+                }
                 const d = data[Math.floor(Math.random() * data.length)];
                 el.className = 'flex flex-col items-center gap-8';
-                el.innerHTML = `<div class="text-9xl">${d.chinese} ${d.icon}</div><div class="text-slate-400 font-bold uppercase italic text-xl">${d.concept}</div>`;
+                el.innerHTML = `<div class="text-9xl">${d.chinese} ${d.icon}</div><div class="text-slate-400 font-bold italic text-xl lowercase">${d.concept.toLowerCase()}</div>`;
                 const inp = document.createElement('input');
                 inp.className = 'p-6 rounded-2xl text-black text-center text-5xl w-full max-w-xl outline-none border-4 border-indigo-500 font-black lowercase';
                 inp.placeholder = "type word...";
@@ -972,7 +949,6 @@
         window.showView = showView;
         window.startGame = startGame;
         window.buyItem = buyItem;
-        window.rescuePet = rescueTrackPet;
         window.rescueTrackPet = rescueTrackPet;
         window.getCurrentWeek = () => state.currentWeek;
         window.onload = load;

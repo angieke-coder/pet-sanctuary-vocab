@@ -1,19 +1,981 @@
-function renderInteraction() {
-    // Other code...
-    const bubbleContainer = document.createElement('div');
-    bubbleContainer.className = 'bubble-container';
-    // Append bubbleContainer to the DOM
-    // Other code...
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Adventure - Pet Sanctuary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #020617, #1e1b4b);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow-x: hidden;
+        }
+        .card-container {
+            border: 3px solid #374151;
+            box-shadow: 0 4px 0 #1f2937;
+            transition: all 0.1s;
+            cursor: pointer;
+            user-select: none;
+            border-radius: 0.75rem; 
+        }
+        .connect-card { background-color: #475569; color: #f8fafc; }
+        .connect-card.selected { background-color: #f59e0b; border-color: #d97706; }
+        .connect-card.matched { opacity: 0; transform: scale(0.9); cursor: default; }
 
-function showBilingualFeedback() {
-    const feedbackPhrases = [
-        'Phrase 1',
-        'Phrase 2',
-        'Phrase 3',
-        'Phrase 4',
-        // Additional phrases...
-        'Phrase 40'
-    ];
-    // Logic to show bilingual feedback using the feedbackPhrases
-}
+        .stage-button {
+            background-color: #8b5cf6; border: 3px solid #6d28d9;
+            box-shadow: 0 6px 0 #6d28d9; color: #ffffff; font-weight: 900;
+            padding: 0.5rem 1rem; transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .stage-button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 3px 0 #6d28d9; }
+        .stage-button:disabled { background-color: #1e293b; border-color: #0f172a; color: #475569; cursor: not-allowed; box-shadow: none; opacity: 0.5; }
+        
+        /* Auras and Effects */
+        .aura-none { filter: none; }
+        .aura-bonded { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7)); }
+        .aura-master { filter: drop-shadow(0 0 25px #8b5cf6); }
+        .aura-legendary { filter: drop-shadow(0 0 40px #f59e0b); transform: scale(1.1); }
+
+        /* JOY WIGGLE - Stronger Up and Down */
+        @keyframes wiggle-updown { 
+            0%, 100% { transform: translateY(0); } 
+            25% { transform: translateY(-80px); }
+            50% { transform: translateY(0); }
+            75% { transform: translateY(-40px); }
+        }
+        .joy-wiggle-y { animation: wiggle-updown 0.6s ease-in-out 2 !important; }
+
+        /* Speech Bubble */
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            border-radius: 1rem;
+            color: #000;
+            padding: 12px 20px;
+            font-weight: 800;
+            display: inline-block;
+            animation: bubble-bounce 0.6s infinite alternate;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 3px solid #000;
+            z-index: 60;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute; bottom: 0; left: 50%;
+            width: 0; height: 0;
+            border: 15px solid transparent;
+            border-top-color: #fff; border-bottom: 0;
+            margin-left: -15px; margin-bottom: -15px;
+        }
+        @keyframes bubble-bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+        
+        .inventory-slot { background: #1e293b; border: 3px solid #334155; }
+        .inventory-slot.active { border-color: #f59e0b; background: #451a03; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.2s ease-in-out 0s 2; }
+
+        .badge-circle {
+            width: 90px; height: 90px;
+            background: radial-gradient(circle, #fff7ed, #fbbf24);
+            border: 4px solid #b45309;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.8rem;
+            box-shadow: 0 0 25px #f59e0b, inset 0 0 10px #fcd34d;
+            position: relative;
+        }
+        .badge-circle::after {
+            content: '';
+            position: absolute; inset: -8px;
+            border-radius: 50%;
+            border: 2px dashed #f59e0b;
+            animation: rotate 10s linear infinite;
+        }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <!-- INITIAL PET PICKER -->
+    <div id="pet-picker-overlay" class="hidden fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-6">
+        <div class="bg-slate-900 border-4 border-indigo-500 rounded-3xl p-10 max-w-2xl w-full text-center shadow-[0_0_50px_rgba(79,70,229,0.3)]">
+            <h2 class="text-5xl font-black text-white mb-4 italic tracking-tighter uppercase font-black">Rescue Sanctuary</h2>
+            <p class="text-indigo-300 mb-10 text-xl font-bold">The mission begins! Who will you rescue first?</p>
+            <div class="grid grid-cols-2 gap-6 mb-10">
+                <button onclick="pickInitialPet('dog')" class="bg-slate-800 p-6 rounded-2xl hover:bg-indigo-900 transition-all group">
+                    <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🐩</span>
+                    <span class="font-black text-xl tracking-widest">DOG TRACK</span>
+                </button>
+                <button onclick="pickInitialPet('cat')" class="bg-slate-800 p-6 rounded-2xl hover:bg-rose-900 transition-all group">
+                    <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🐈</span>
+                    <span class="font-black text-xl tracking-widest">CAT TRACK</span>
+                </button>
+                <button onclick="pickInitialPet('dragon')" class="bg-slate-800 p-6 rounded-2xl hover:bg-emerald-900 transition-all group">
+                    <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🦎</span>
+                    <span class="font-black text-xl tracking-widest">DRAGON TRACK</span>
+                </button>
+                <button onclick="pickInitialPet('shark')" class="bg-slate-800 p-6 rounded-2xl hover:bg-cyan-900 transition-all group">
+                    <span class="text-7xl block mb-4 group-hover:scale-125 transition-transform">🦈</span>
+                    <span class="font-black text-xl tracking-widest">SHARK TRACK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container" class="w-full max-w-6xl mx-auto p-6 bg-slate-900/80 rounded-3xl shadow-2xl border-4 border-white/10 backdrop-blur-md">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                RESCUE COMMAND
+            </h1>
+            <div class="flex items-center gap-4">
+                <div id="round-counter" class="text-indigo-400 font-black text-sm uppercase">Total Rounds: 0</div>
+                <div id="score-display" class="bg-yellow-500 px-6 py-2 rounded-full font-black text-2xl text-slate-900 shadow-[0_0_20px_rgba(234,179,8,0.4)]">
+                    $0
+                </div>
+            </div>
+        </div>
+        
+        <div id="message-box" class="text-center p-4 mb-6 rounded-2xl font-black text-lg bg-indigo-600 text-white uppercase tracking-widest shadow-lg transition-all duration-300">
+            TRAIN VOCAB TO EARN RESCUE FUNDS
+        </div>
+        
+        <!-- Navigation -->
+        <div class="flex flex-wrap justify-center gap-3 mb-8">
+            <button class="stage-button rounded-2xl px-6" onclick="showView('game')">⚔️ BATTLE</button>
+            <button class="stage-button rounded-2xl px-6" onclick="showView('sanctuary')">🏡 SANCTUARY</button>
+            <button class="stage-button rounded-2xl px-6" onclick="showView('shop')">🛒 MARKET</button>
+            <button class="stage-button rounded-2xl px-6" onclick="showView('badges')">🏅 BADGES</button>
+            <button class="stage-button bg-rose-600 border-rose-800 shadow-rose-900 rounded-2xl px-6" onclick="showView('shelter')">🚑 SHELTER</button>
+        </div>
+
+        <!-- VIEWS -->
+        <div id="game-view">
+            <div id="week-selector" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+            <div id="stage-selector" class="flex flex-col sm:flex-row justify-center gap-4 mb-10">
+                <button id="btn-s1" class="stage-button rounded-xl text-sm" onclick="startGame(window.getCurrentWeek(), 1)">STAGE 1: PICTURES</button>
+                <button id="btn-s2" class="stage-button rounded-xl text-sm" onclick="startGame(window.getCurrentWeek(), 2)">STAGE 2: MEMORY</button>
+                <button id="btn-s3" class="stage-button rounded-xl text-sm" onclick="startGame(window.getCurrentWeek(), 3)">STAGE 3: SPELLING</button>
+            </div>
+            <div id="game-board" class="p-10 bg-black/40 rounded-3xl min-h-[400px] border-2 border-white/5 relative">
+                <p class="text-center text-slate-500 font-bold uppercase tracking-widest pt-24 opacity-50">Complete Stages 1-3 to earn big bonuses!</p>
+            </div>
+        </div>
+        
+        <div id="sanctuary-view" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="lg:col-span-1 bg-black/40 p-4 rounded-3xl border-2 border-white/5 max-h-[600px] overflow-y-auto custom-scrollbar">
+                    <h3 class="text-xl font-black mb-4 text-indigo-400 italic">RESCUE SQUAD</h3>
+                    <div id="owned-pets-list" class="space-y-4"></div>
+                </div>
+                <div class="lg:col-span-3 bg-gradient-to-b from-slate-800 to-slate-900 p-8 rounded-3xl border-2 border-indigo-500/30 flex flex-col items-center min-h-[600px] relative overflow-hidden">
+                    <div id="interaction-target" class="flex flex-col items-center justify-center flex-grow w-full z-10">
+                        <p class="text-slate-500 font-black">SELECT AN ANIMAL TO START CARE</p>
+                    </div>
+                    <div id="interaction-actions" class="hidden w-full flex flex-col items-center gap-6 mt-6 z-10">
+                        <div id="forever-home-container"></div>
+                        <div id="inventory-bar" class="w-full bg-black/30 p-6 rounded-2xl border border-white/10">
+                            <p class="text-xs font-black text-slate-400 mb-4 uppercase tracking-tighter font-bold">Inventory (Feed them to trigger movement!):</p>
+                            <div id="inventory-items" class="flex gap-4 overflow-x-auto pb-2 px-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="badges-view" class="hidden">
+            <h2 class="text-3xl font-black mb-8 text-yellow-400 italic uppercase text-center">🏅 Hall of Heroes 🏅</h2>
+            <div id="badge-grid" class="flex flex-wrap justify-center gap-8"></div>
+        </div>
+
+        <div id="shop-view" class="hidden">
+            <h2 class="text-3xl font-black mb-8 text-yellow-400 italic uppercase">Supply Market 🛒</h2>
+            <div id="shop-container" class="space-y-12"></div>
+        </div>
+
+        <div id="shelter-view" class="hidden">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-black text-rose-500 italic uppercase">Animal Shelter 🚑</h2>
+                <p class="text-slate-400 font-bold tracking-widest uppercase">Secret species await rescue! Save them all.</p>
+            </div>
+            <div id="shelter-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- DATA ---
+        const vocabData = {
+            3: [
+                { word: "grand", chinese: "太好了", concept: "品質極佳", icon: "✨", keyword: "excellent" },
+                { word: "memorial", chinese: "紀念碑", concept: "向逝者致敬", icon: "🗿", keyword: "honors dead" },
+                { word: "peculiar", chinese: "奇怪的", concept: "不尋常的外表", icon: "🌀", keyword: "unusual weird" },
+                { word: "positive", chinese: "確定的", concept: "百分之百確定", icon: "✔️", keyword: "without doubt" },
+                { word: "prideful", chinese: "高傲的", concept: "過度自滿", icon: "🦚", keyword: "too much pride" },
+                { word: "recalls", chinese: "回想", concept: "記起過去", icon: "🧠", keyword: "remembers" },
+                { word: "selecting", chinese: "選擇", concept: "挑選合適的", icon: "👈", keyword: "choosing" },
+                { word: "admire", chinese: "欽佩", concept: "尊敬仰慕", icon: "👏", keyword: "respect a lot" },
+                { word: "magnet", chinese: "磁鐵", concept: "吸引金屬", icon: "🧲", keyword: "attract metals" },
+                { word: "contest", chinese: "比賽", concept: "競技活動", icon: "🏆", keyword: "competition" },
+                { word: "method", chinese: "方法", concept: "做事的方式", icon: "🧪", keyword: "way of doing" },
+                { word: "custom", chinese: "習俗", concept: "傳統習慣", icon: "🏮", keyword: "tradition" },
+                { word: "rally", chinese: "集會", concept: "公眾集會", icon: "📢", keyword: "public meeting" },
+                { word: "soccer", chinese: "足球", concept: "球類運動", icon: "⚽", keyword: "football" },
+                { word: "engine", chinese: "引擎", concept: "動力來源", icon: "⚙️", keyword: "machine energy" },
+                { word: "sudden", chinese: "突然的", concept: "意外發生", icon: "⚡", keyword: "happening quickly" },
+                { word: "finger", chinese: "手指", concept: "手的一部分", icon: "☝️", keyword: "hand part" },
+                { word: "accident", chinese: "意外", concept: "突發事故", icon: "⚠️", keyword: "unplanned event" },
+                { word: "mitten", chinese: "連指手套", concept: "保暖手套", icon: "🧤", keyword: "glove type" },
+                { word: "intend", chinese: "企圖", concept: "打算去做", icon: "🎯", keyword: "mean to do" },
+                { word: "fabric", chinese: "布料", concept: "衣服材料", icon: "🧵", keyword: "material" },
+                { word: "flatten", chinese: "使平坦", concept: "弄平整", icon: "📏", keyword: "make flatter" },
+                { word: "rascal", chinese: "淘氣鬼", concept: "愛胡鬧的人", icon: "👺", keyword: "youngster annoys" },
+                { word: "gutter", chinese: "排水溝", concept: "屋頂排水", icon: "💧", keyword: "rain roof" },
+                { word: "mammal", chinese: "哺乳動物", concept: "餵奶的動物", icon: "🐕", keyword: "feeds milk young" }
+            ],
+            5: [
+                { word: "sequence", chinese: "順序", concept: "排列先後", icon: "🔢", keyword: "order things" },
+                { word: "summarize", chinese: "總結", concept: "簡短重述", icon: "📝", keyword: "tell again fewer" },
+                { word: "point-of-view", chinese: "觀點", concept: "個人看法", icon: "👁️‍🗨️", keyword: "opinion perspective" },
+                { word: "experiences", chinese: "經驗", concept: "經歷過的事", icon: "🧗", keyword: "things experienced" },
+                { word: "Florida", chinese: "佛羅里達", concept: "美國一州", icon: "☀️", keyword: "state south usa" },
+                { word: "preacher", chinese: "牧師", concept: "宗教教師", icon: "⛪", keyword: "teaches religion" },
+                { word: "fancy", chinese: "豪華的", concept: "不平凡的", icon: "💎", keyword: "special not plain" },
+                { word: "library", chinese: "圖書館", concept: "藏書之處", icon: "📚", keyword: "borrow books" },
+                { word: "hind", chinese: "後面的", concept: "物體後部", icon: "🔙", keyword: "back of thing" },
+                { word: "humming", concept: "嗡嗡聲", icon: "🐝", keyword: "continuous sound" },
+                { word: "trembling", chinese: "顫抖的", concept: "恐懼發抖", icon: "🥶", keyword: "shaking fear" },
+                { word: "shaking", chinese: "抖動的", concept: "快速晃動", icon: "🫨", keyword: "moving back forth" },
+                { word: "stuck", chinese: "被困的", concept: "無法移動", icon: "🕸️", keyword: "cannot move" },
+                { word: "weigh", chinese: "秤重", concept: "測量重量", icon: "⚖️", keyword: "measure weight" },
+                { word: "embarrassed", chinese: "尷尬的", concept: "感到羞愧", icon: "😳", keyword: "feel foolish" },
+                { word: "sigh", chinese: "嘆氣", concept: "長呼一口氣", icon: "😮‍💨", keyword: "let out breath" },
+                { word: "wagged", chinese: "搖擺", concept: "尾巴晃動", icon: "🐕", keyword: "moved side side" },
+                { word: "snuffled", chinese: "抽鼻子", concept: "用力吸氣", icon: "🤧", keyword: "breath loudly cold" },
+                { word: "librarian", chinese: "管理員", concept: "圖書館員工", icon: "👵", keyword: "library worker" },
+                { word: "shadow", chinese: "陰影", concept: "背光暗處", icon: "👤", keyword: "dark shape light" },
+                { word: "sniffed", chinese: "聞", concept: "鼻端吸氣", icon: "👃", keyword: "suck air nose" },
+                { word: "snatched", chinese: "奪走", concept: "快速拿走", icon: "🦅", keyword: "take quick way" },
+                { word: "wrinkled", chinese: "皺皺的", concept: "有紋路的", icon: "🧺", keyword: "having lines" },
+                { word: "friendless", chinese: "無友的", concept: "孤單一人", icon: "🏚️", keyword: "without friends" },
+                { word: "talent", chinese: "天賦", concept: "特別才能", icon: "🌟", keyword: "skill or knowledge" }
+            ],
+            6: [
+                { word: "docks", chinese: "碼頭", concept: "船隻裝載", icon: "⚓", keyword: "ships loaded" },
+                { word: "migrating", chinese: "遷徙中", concept: "搬往他處", icon: "🦆", keyword: "moving place" },
+                { word: "scan", chinese: "瀏覽", concept: "仔細查看", icon: "🔍", keyword: "look carefully" },
+                { word: "scent", chinese: "香味", concept: "聞到的氣味", icon: "🕯️", keyword: "smell of thing" },
+                { word: "wharf", chinese: "碼頭", icon: "🚢", keyword: "platforms load" },
+                { word: "yearned", chinese: "渴望", concept: "內心期盼", icon: "🌠", keyword: "longed for" },
+                { word: "height", chinese: "高度", concept: "垂直長度", icon: "📏", keyword: "how high person" },
+                { word: "slight", chinese: "少量的", concept: "微不足道", icon: "🤏", keyword: "very small" },
+                { word: "highway", chinese: "高速公路", concept: "主要幹道", icon: "🛣️", keyword: "major road" },
+                { word: "right", chinese: "右邊", concept: "正確的方向", icon: "➡️", keyword: "correct side" },
+                { word: "spray", chinese: "噴霧", concept: "小水滴", icon: "💨", keyword: "liquid drops" },
+                { word: "thigh", chinese: "大腿", concept: "腿部上段", icon: "🦵", keyword: "top part legs" },
+                { word: "frighten", chinese: "使害怕", concept: "讓人恐懼", icon: "👻", keyword: "cause afraid" },
+                { word: "eight", chinese: "八", concept: "數字 8", icon: "8️⃣", keyword: "number 8" },
+                { word: "bait", chinese: "誘餌", concept: "引誘獵物", icon: "🪱", keyword: "lure prey" },
+                { word: "raisin", chinese: "葡萄乾", concept: "脫水葡萄", icon: "🍇", keyword: "dried grape" },
+                { word: "freight", chinese: "貨物", concept: "船運商品", icon: "📦", keyword: "cargo goods" },
+                { word: "detail", chinese: "細節", concept: "微小部分", icon: "📍", keyword: "small part" },
+                { word: "grain", chinese: "穀粒", concept: "植物種子", icon: "🌾", keyword: "seeds plants" },
+                { word: "trait", chinese: "特徵", concept: "品質特點", icon: "🆔", keyword: "characteristic" }
+            ],
+            7: [
+                { word: "expedition", chinese: "遠征", concept: "特殊目的之旅", icon: "🗺️", keyword: "journey purpose" },
+                { word: "explore", chinese: "探索", concept: "前往新地方", icon: "🔭", keyword: "travel new place" },
+                { word: "Newfoundland", chinese: "紐芬蘭", concept: "加拿大地名", icon: "🇨🇦", keyword: "part of canada" },
+                { word: "purpose", chinese: "目的", concept: "做事的理由", icon: "🎯", keyword: "reason doing" },
+                { word: "wilderness", chinese: "蠻荒", concept: "原始野地", icon: "🏔️", keyword: "wild natural" },
+                { word: "bought", chinese: "買了", concept: "支付金錢", icon: "💰", keyword: "paid money" },
+                { word: "spirit", chinese: "精神", concept: "內在品質", icon: "🕯️", keyword: "inner quality" },
+                { word: "trapper", chinese: "捕獸人", concept: "陷阱獵人", icon: "🪤", keyword: "catches animals" },
+                { word: "wildflowers", chinese: "野花", concept: "野外花朵", icon: "🌻", keyword: "flowers wild" },
+                { word: "sniff", chinese: "聞", concept: "鼻子吸氣", icon: "👃", keyword: "take air nose" },
+                { word: "straighter", chinese: "更直的", concept: "比較筆直", icon: "📏", keyword: "more straight" },
+                { word: "scratched", chinese: "抓傷", concept: "留下痕跡", icon: "🐱", keyword: "mark thin sharp" },
+                { word: "drowning", chinese: "溺水", concept: "水底窒息", icon: "🆘", keyword: "die in water" },
+                { word: "webbed", chinese: "有蹼的", concept: "指間相連", icon: "🦆", keyword: "connecting toes" },
+                { word: "muscular", chinese: "強壯的", concept: "肌肉發達", icon: "💪", keyword: "strong muscles" },
+                { word: "bargain", chinese: "交易", concept: "划算的買賣", icon: "🤝", keyword: "good deal" },
+                { word: "necessary", chinese: "必要的", concept: "必須具備", icon: "✅", keyword: "required needed" },
+                { word: "breed", chinese: "品種", concept: "動物類別", icon: "🐩", keyword: "type of animal" },
+                { word: "happiest", chinese: "最快樂", concept: "極度開心", icon: "🥳", keyword: "most happy" },
+                { word: "tingled", chinese: "刺痛感", concept: "強烈情緒", icon: "⚡", keyword: "sharp points" },
+                { word: "digging", chinese: "挖掘", concept: "挖洞動作", icon: "⛏️", keyword: "moving soil" },
+                { word: "channels", chinese: "航道", concept: "深水路徑", icon: "🛶", keyword: "deep part river" },
+                { word: "hunting", chinese: "狩獵", concept: "捕獲獵物", icon: "🏹", keyword: "catch prey" },
+                { word: "shallow", chinese: "淺的", concept: "深度不足", icon: "🦶", keyword: "not deep" }
+            ],
+            8: [
+                { word: "favor", chinese: "恩惠", concept: "助人之舉", icon: "🎁", keyword: "kind helpful act" },
+                { word: "offended", chinese: "冒犯", concept: "讓人不悅", icon: "😤", keyword: "cause hurt angry" },
+                { word: "prairie", chinese: "草原", concept: "廣大平原", icon: "🌾", keyword: "wide flat land" },
+                { word: "riverbed", chinese: "河床", concept: "水流之處", icon: "🪨", keyword: "ground river" },
+                { word: "shrieked", chinese: "尖叫", concept: "高分貝喊叫", icon: "😱", keyword: "loud high cry" },
+                { word: "finally", chinese: "終於", concept: "漫長等待後", icon: "🏁", keyword: "after long time" },
+                { word: "rookie", chinese: "新手", concept: "剛加入的人", icon: "🐣", keyword: "new in activity" },
+                { word: "balcony", chinese: "陽台", concept: "戶外平台", icon: "🏘️", keyword: "wall outside" },
+                { word: "calorie", chinese: "卡路里", concept: "能量單位", icon: "🥗", keyword: "heat energy" },
+                { word: "movie", chinese: "電影", concept: "動態影像", icon: "🎬", keyword: "images story" },
+                { word: "hockey", chinese: "曲棍球", concept: "棍球運動", icon: "🏒", keyword: "game stick ball" },
+                { word: "steady", chinese: "穩定的", concept: "規律不變", icon: "⚓", keyword: "regular way" },
+                { word: "honey", chinese: "蜂蜜", concept: "甜美液體", icon: "🍯", keyword: "sweet bees" },
+                { word: "country", chinese: "國家", concept: "獨立主權", icon: "🚩", keyword: "nation land" },
+                { word: "collie", chinese: "牧羊犬", concept: "長毛名犬", icon: "🐕", keyword: "dog long hair" },
+                { word: "alley", chinese: "小巷", concept: "狹窄街道", icon: "🏚️", keyword: "narrow street" },
+                { word: "valley", chinese: "山谷", concept: "兩山之間", icon: "⛰️", keyword: "low land hills" },
+                { word: "empty", chinese: "空的", concept: "空無一物", icon: "🈳", keyword: "not containing" },
+                { word: "breezy", chinese: "微風", concept: "舒爽的風", icon: "🌬️", keyword: "wind pleasant" },
+                { word: "trolley", chinese: "電車", concept: "軌道車輛", icon: "🚋", keyword: "vehicle tracks" },
+                { word: "money", chinese: "錢", concept: "支付工具", icon: "💵", keyword: "pay goods" },
+                { word: "city", chinese: "城市", concept: "繁華城鎮", icon: "🏙️", keyword: "large town" },
+                { word: "jury", chinese: "陪審團", concept: "裁決小組", icon: "⚖️", keyword: "chosen decision" }
+            ],
+            9: [
+                { word: "chili", chinese: "辣椒", concept: "辛辣佐料", icon: "🌶️", keyword: "pepper flavor" },
+                { word: "lullaby", chinese: "搖籃曲", concept: "催眠歌曲", icon: "🎶", keyword: "song help sleep" },
+                { word: "reptile", chinese: "爬蟲", concept: "冷血動物", icon: "🐍", keyword: "produces eggs" },
+                { word: "lizard", chinese: "蜥蜴", concept: "四腳爬蟲", icon: "🦎", keyword: "reptile four legs" },
+                { word: "pucker", chinese: "皺起", concept: "肌肉收縮", icon: "😙", keyword: "pull folds" },
+                { word: "spit", chinese: "唾液", concept: "口中液體", icon: "💦", keyword: "liquid mouth" },
+                { word: "offended", chinese: "冒犯", concept: "心生憤怒", icon: "😠", keyword: "upset angry" },
+                { word: "spell", chinese: "拼字", concept: "字母排序", icon: "🔡", keyword: "letters order" },
+                { word: "nobleman", chinese: "貴族", concept: "身分高貴", icon: "🤴", keyword: "member nobility" },
+                { word: "recollect", chinese: "回憶", concept: "想起舊事", icon: "💭", keyword: "remember something" },
+                { word: "hitched", chinese: "套住", concept: "勾住連接", icon: "🪝", keyword: "attach fasten" },
+                { word: "generation", chinese: "世代", concept: "同輩人群", icon: "👨‍👩‍👧‍👦", keyword: "people same age" },
+                { word: "traditional", chinese: "傳統", concept: "長久習俗", icon: "🏮", keyword: "used long time" },
+                { word: "fabulous", chinese: "極好", concept: "精彩絕倫", icon: "🤩", keyword: "excellent" },
+                { word: "scurried", chinese: "急趕", concept: "小步快跑", icon: "🏃", keyword: "move quickly" },
+                { word: "thundered", chinese: "打雷", concept: "天空巨響", icon: "⛈️", keyword: "loud noise sky" },
+                { word: "trickster", chinese: "騙子", concept: "捉弄他人", icon: "🃏", keyword: "tricks deceives" },
+                { word: "amigo", chinese: "朋友", concept: "西語友人", icon: "🧑‍🤝‍🧑", keyword: "friend spanish" }
+            ]
+        };
+
+        const shopItems = [
+            { id: 'dog_kibble', name: 'Kibble', icon: '🦴', cost: 100, target: 'dog', feedback: 'Yummy! 太好吃了!' },
+            { id: 'dog_steak', name: 'Steak', icon: '🥩', cost: 400, target: 'dog', feedback: 'Wuff! Prime taste! 高級美味!' },
+            { id: 'dog_toy', name: 'Rubber Ball', icon: '🎾', cost: 200, target: 'dog', feedback: 'Fetch! So fun! 真好玩!' },
+            { id: 'dog_brush', name: 'Gold Brush', icon: '🪮', cost: 600, target: 'dog', feedback: 'Shiny fur! 毛好亮!' },
+            { id: 'dog_frisbee', name: 'Frisbee', icon: '🥏', cost: 1200, target: 'dog', feedback: 'I can fly! 我要飛起來了!' },
+            { id: 'cat_tuna', name: 'Tuna', icon: '🐟', cost: 120, target: 'cat', feedback: 'Purrrr... delicious! 好鮮美的魚!' },
+            { id: 'cat_salmon', name: 'Salmon', icon: '🍣', cost: 450, target: 'cat', feedback: 'I am royalty! 我是貴族!' },
+            { id: 'cat_nip', name: 'Catnip', icon: '🌿', cost: 300, target: 'cat', feedback: 'Zoomies! 我要衝刺了!' },
+            { id: 'cat_wand', name: 'Wand', icon: '🪶', cost: 250, target: 'cat', feedback: 'Cought it! 抓到了!' },
+            { id: 'cat_tower', name: 'Tower', icon: '🏰', cost: 1500, target: 'cat', feedback: 'Castle King! 國王在此!' },
+            { id: 'dr_bug', name: 'Bugs', icon: '🦗', cost: 100, target: 'dragon', feedback: 'Crrrk... tasty! 獵物真美味!' },
+            { id: 'dr_lava', name: 'Lava', icon: '🌋', cost: 500, target: 'dragon', feedback: 'Fiery taste! 燙燙的力量!' },
+            { id: 'dr_lamp', name: 'Lamp', icon: '💡', cost: 800, target: 'dragon', feedback: 'Warmth! 能量爆發!' },
+            { id: 'dr_ruby', name: 'Ruby', icon: '💎', cost: 1200, target: 'dragon', feedback: 'Shine! 鑽石的力量!' },
+            { id: 'dr_gold', name: 'Gold', icon: '💰', cost: 2000, target: 'dragon', feedback: 'My treasure! 我的寶藏!' },
+            { id: 'sh_shrimp', name: 'Shrimp', icon: '🦐', cost: 150, target: 'shark', feedback: 'Splash! Gulp! 鮮蝦大餐!' },
+            { id: 'sh_squid', name: 'Squid', icon: '🦑', cost: 550, target: 'shark', feedback: 'Big catch! 大獵物!' },
+            { id: 'sh_ring', name: 'Ring', icon: '⭕', cost: 400, target: 'shark', feedback: 'Diving fun! 潛水尋寶!' },
+            { id: 'sh_coral', name: 'Coral', icon: '🪸', cost: 900, target: 'shark', feedback: 'Comfy! 舒服的珊瑚!' },
+            { id: 'sh_crown', name: 'Crown', icon: '👑', cost: 2500, target: 'shark', feedback: 'Master! 海洋霸主!' },
+            { id: 'any_bed', name: 'Bed', icon: '🛏️', cost: 1000, target: 'any', feedback: 'Zzz... 睡得真香!' },
+            { id: 'any_pill', name: 'Pills', icon: '💊', cost: 800, target: 'any', feedback: 'Stronger! 我變強了!' },
+            { id: 'any_cam', name: 'Camera', icon: '📸', cost: 600, target: 'any', feedback: 'Smile! 我好上相!' },
+            { id: 'any_bling', name: 'Collar', icon: '✨', cost: 1300, target: 'any', feedback: 'Sharp! 我好帥!' },
+            { id: 'any_water', name: 'Water', icon: '⛲', cost: 2000, target: 'any', feedback: 'Cool! 太清爽了!' }
+        ];
+
+        const animalTracks = {
+            dog: [
+                { name: "Poodle", icon: "🐩", level_icons: ["🐩", "🐕", "🐕‍🦺", "🐺"] },
+                { name: "Golden Retriever", icon: "🐕", level_icons: ["🐕", "🐩", "🐕‍🦺", "🐺"] },
+                { name: "Beagle", icon: "🐶", level_icons: ["🐶", "🐕", "🐕‍🦺", "🐺"] },
+                { name: "Pug", icon: "🐕", level_icons: ["🐕", "🐩", "🐕‍🦺", "🐺"] },
+                { name: "Bulldog", icon: "🐶", level_icons: ["🐶", "🐕", "🐕‍🦺", "🐺"] },
+                { name: "Husky", icon: "🐺", level_icons: ["🐺", "🐕", "🐕‍🦺", "🐺"] },
+                { name: "Shiba Inu", icon: "🐕", level_icons: ["🐕", "🐩", "🐕‍🦺", "🐺"] },
+                { name: "Corgi", icon: "🐶", level_icons: ["🐶", "🐕", "🐕‍🦺", "🐺"] },
+                { name: "Dalmatian", icon: "🐕", level_icons: ["🐕", "🐩", "🐕‍🦺", "🐺"] },
+                { name: "Grey Wolf", icon: "🐺", level_icons: ["🐺", "🐕", "🐕‍🦺", "🐺"] }
+            ],
+            cat: [
+                { name: "Stray Cat", icon: "🐈", level_icons: ["🐈", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Tabby Cat", icon: "🐱", level_icons: ["🐱", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Siamese", icon: "🐈", level_icons: ["🐈", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Persian", icon: "🐱", level_icons: ["🐱", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Bengal", icon: "🐈", level_icons: ["🐈", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Sphinx", icon: "🐱", level_icons: ["🐱", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Maine Coon", icon: "🦁", level_icons: ["🦁", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Scottish Fold", icon: "🐱", level_icons: ["🐱", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Black Panther", icon: "🐆", level_icons: ["🐆", "🐈‍⬛", "🐆", "🐅"] },
+                { name: "Royal Tiger", icon: "🐅", level_icons: ["🐅", "🐈‍⬛", "🐆", "🐅"] }
+            ],
+            dragon: [
+                { name: "Tiny Lizard", icon: "🦎", level_icons: ["🦎", "🦖", "🐊", "🐉"] },
+                { name: "Chameleon", icon: "🦎", level_icons: ["🦎", "🦖", "🐊", "🐉"] },
+                { name: "Komodo", icon: "🦎", level_icons: ["🦎", "🦖", "🐊", "🐉"] },
+                { name: "Hydra Cub", icon: "🦖", level_icons: ["🦖", "🦖", "🐊", "🐉"] },
+                { name: "Wyvern", icon: "🦖", level_icons: ["🦖", "🦖", "🐊", "🐉"] },
+                { name: "Drake", icon: "🐊", level_icons: ["🐊", "🦖", "🐊", "🐉"] },
+                { name: "Basilisk", icon: "🦎", level_icons: ["🦎", "🦖", "🐊", "🐉"] },
+                { name: "Sea Serpent", icon: "🐉", level_icons: ["🐉", "🦖", "🐊", "🐉"] },
+                { name: "Fire Dragon", icon: "🐉", level_icons: ["🐉", "🦖", "🐊", "🐉"] },
+                { name: "Golden Dragon", icon: "🐉", level_icons: ["🐉", "🦖", "🐊", "🐉"] }
+            ],
+            shark: [
+                { name: "Fry Shark", icon: "🦈", level_icons: ["🦈", "🐬", "🐋", "🌊"] },
+                { name: "Blue Shark", icon: "🦈", level_icons: ["🦈", "🐬", "🐋", "🌊"] },
+                { name: "Hammerhead", icon: "🦈", level_icons: ["🦈", "🐬", "🐋", "🌊"] },
+                { name: "Great White", icon: "🦈", level_icons: ["🦈", "🐬", "🐋", "🌊"] },
+                { name: "Megalodon", icon: "🐋", level_icons: ["🐋", "🐬", "🐋", "🌊"] },
+                { name: "Narwhal", icon: "🐋", level_icons: ["🐋", "🐬", "🐋", "🌊"] },
+                { name: "Orca", icon: "🐋", level_icons: ["🐋", "🐬", "🐋", "🌊"] },
+                { name: "Dolphin", icon: "🐬", level_icons: ["🐬", "🐬", "🐋", "🌊"] },
+                { name: "Blue Whale", icon: "🐋", level_icons: ["🐋", "🐬", "🐋", "🌊"] },
+                { name: "Kraken", icon: "🌊", level_icons: ["🌊", "🐬", "🐋", "🌊"] }
+            ]
+        };
+
+        // --- STATE ---
+        let state = {
+            coins: 0,
+            ownedPets: [], 
+            inventory: {}, 
+            badges: [], 
+            currentWeek: 3,
+            selectedPetId: null,
+            weekProgress: { 3:1, 5:1, 6:1, 7:1, 8:1, 9:1 },
+            totalRoundsFinished: 0
+        };
+
+        // --- SOUND ---
+        const clickSynth = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 4, oscillator: { type: "sine" } }).toDestination();
+        const coinSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" } }).toDestination();
+        const errorSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sawtooth" } }).toDestination();
+
+        function playSFX(type) {
+            if (Tone.context.state !== 'running') Tone.start();
+            try {
+                if (type === 'click') clickSynth.triggerAttackRelease("G2", "16n");
+                else if (type === 'coin') coinSynth.triggerAttackRelease(["C5", "G5"], "16n");
+                else if (type === 'error') errorSynth.triggerAttackRelease(["C3", "Db3"], "8n");
+                else if (type === 'rescue') coinSynth.triggerAttackRelease(["C4", "G4", "C5"], "4n");
+            } catch (e) {}
+        }
+
+        // --- PROGRESSION ---
+        function getPetStats(pet) {
+            let rank = "RESCUE";
+            let aura = "aura-none";
+            let icon = pet.level_icons[0];
+            if (pet.favorability >= 300) { rank = "LEGENDARY"; aura = "aura-legendary"; icon = pet.level_icons[3]; }
+            else if (pet.favorability >= 150) { rank = "ELITE"; aura = "aura-master"; icon = pet.level_icons[2]; }
+            else if (pet.favorability >= 50) { rank = "BONDED"; aura = "aura-bonded"; icon = pet.level_icons[1]; }
+            return { rank, aura, icon };
+        }
+
+        // --- CORE FUNCTIONS ---
+        function showView(view) {
+            playSFX('click');
+            ['game', 'sanctuary', 'shop', 'shelter', 'badges'].forEach(v => {
+                const el = document.getElementById(`${v}-view`);
+                if (el) el.classList.toggle('hidden', v !== view);
+            });
+            if (view === 'game') updateStageButtons();
+            if (view === 'sanctuary') renderSanctuary();
+            if (view === 'shop') renderShop();
+            if (view === 'shelter') renderShelter();
+            if (view === 'badges') renderBadges();
+        }
+
+        function pickInitialPet(type) {
+            const p = animalTracks[type][0];
+            state.ownedPets.push({ ...p, type, id: Date.now(), favorability: 0 });
+            document.getElementById('pet-picker-overlay').classList.add('hidden');
+            save(); showView('sanctuary');
+        }
+
+        function save() {
+            localStorage.setItem('pet_rescue_v12_secret_species', JSON.stringify(state));
+            updateUI();
+        }
+
+        function load() {
+            const saved = localStorage.getItem('pet_rescue_v12_secret_species');
+            if (saved) state = JSON.parse(saved);
+            else document.getElementById('pet-picker-overlay').classList.remove('hidden');
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('score-display').textContent = `$${state.coins}`;
+            document.getElementById('round-counter').textContent = `Total Rounds: ${state.totalRoundsFinished}`;
+            renderWeekSelector();
+            updateStageButtons();
+        }
+
+        function renderWeekSelector() {
+            const container = document.getElementById('week-selector');
+            if (!container) return; container.innerHTML = '';
+            [3, 5, 6, 7, 8, 9].forEach(w => {
+                const btn = document.createElement('button');
+                btn.className = `stage-button rounded-full px-4 text-xs ${state.currentWeek == w ? 'bg-indigo-400' : ''}`;
+                btn.textContent = `WEEK ${w}`;
+                btn.onclick = () => { playSFX('click'); state.currentWeek = w; save(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateStageButtons() {
+            const currentWeekProgress = state.weekProgress[state.currentWeek] || 1;
+            [1, 2, 3].forEach(s => {
+                const btn = document.getElementById(`btn-s${s}`);
+                if (btn) btn.disabled = (s !== currentWeekProgress);
+            });
+        }
+
+        function renderSanctuary() {
+            const list = document.getElementById('owned-pets-list');
+            if (!list) return; list.innerHTML = '';
+            state.ownedPets.forEach(pet => {
+                const { icon, rank } = getPetStats(pet);
+                const div = document.createElement('div');
+                div.className = `pet-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer border-2 transition-all ${state.selectedPetId === pet.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'}`;
+                div.innerHTML = `
+                    <span class="text-3xl">${icon}</span>
+                    <div class="flex-grow text-left">
+                        <p class="font-black text-xs uppercase">${pet.name}</p>
+                        <p class="text-[10px] text-indigo-400 font-bold">${rank}</p>
+                    </div>
+                `;
+                div.onclick = () => { playSFX('click'); state.selectedPetId = pet.id; renderSanctuary(); };
+                list.appendChild(div);
+            });
+            renderInteraction();
+            renderInventory();
+        }
+
+        function renderInteraction() {
+            const target = document.getElementById('interaction-target');
+            const actions = document.getElementById('interaction-actions');
+            const foreverContainer = document.getElementById('forever-home-container');
+            const pet = state.ownedPets.find(p => p.id === state.selectedPetId);
+            
+            if (!pet) { 
+                target.innerHTML = '<p class="text-slate-500 font-black uppercase">Select an animal from your squad</p>'; 
+                actions.classList.add('hidden'); 
+                return; 
+            }
+
+            actions.classList.remove('hidden');
+            const { icon, rank, aura } = getPetStats(pet);
+            
+            target.innerHTML = `
+                <div id="bubble-container" class="h-24 mb-4 flex items-center justify-center"></div>
+                <div id="pet-visual" class="text-[150px] mb-6 ${aura} select-none transition-all duration-500">${icon}</div>
+                <div class="text-center">
+                    <h4 class="text-3xl font-black text-white italic tracking-tighter">${pet.name}</h4>
+                    <p class="text-indigo-400 font-bold tracking-widest text-sm uppercase">${rank} (LOVE: ${pet.favorability})</p>
+                </div>
+            `;
+
+            foreverContainer.innerHTML = '';
+            if (pet.favorability >= 300) {
+                const fhBtn = document.createElement('button');
+                fhBtn.className = "bg-green-500 hover:bg-green-400 text-black font-black px-8 py-3 rounded-full mb-6 shadow-xl active:scale-95 transition-all";
+                fhBtn.textContent = "SEND TO FOREVER HOME 🏡";
+                fhBtn.onclick = () => sendToForeverHome(pet);
+                foreverContainer.appendChild(fhBtn);
+            }
+        }
+
+        window.sendToForeverHome = (pet) => {
+            playSFX('rescue');
+            state.badges.push({ icon: pet.level_icons[3], name: pet.name, date: new Date().toLocaleDateString() });
+            state.ownedPets = state.ownedPets.filter(p => p.id !== pet.id);
+            state.selectedPetId = null;
+            const msg = document.getElementById('message-box');
+            msg.textContent = `SUCCESS! ${pet.name} IS NOW AT THEIR FOREVER HOME! 🏅 BADGE EARNED!`;
+            msg.className = "text-center p-4 mb-6 rounded-2xl font-black text-lg bg-green-500 text-black uppercase tracking-widest shadow-lg";
+            setTimeout(() => {
+                msg.className = "text-center p-4 mb-6 rounded-2xl font-black text-lg bg-indigo-600 text-white uppercase tracking-widest shadow-lg";
+                msg.textContent = "TRAIN VOCAB TO EARN RESCUE FUNDS";
+            }, 5000);
+            save(); renderSanctuary();
+        };
+
+        function renderInventory() {
+            const container = document.getElementById('inventory-items');
+            if (!container) return; container.innerHTML = '';
+            Object.entries(state.inventory).forEach(([id, count]) => {
+                if (count <= 0) return;
+                const item = shopItems.find(i => i.id === id);
+                const div = document.createElement('div');
+                div.className = `inventory-slot min-w-[90px] h-[90px] rounded-2xl flex flex-col items-center justify-center cursor-pointer ${state.selectedItemId === id ? 'active' : ''}`;
+                div.innerHTML = `<span class="text-4xl">${item.icon}</span><span class="text-[10px] font-black mt-1">X${count}</span>`;
+                div.onclick = () => { 
+                    const pet = state.ownedPets.find(p => p.id === state.selectedPetId);
+                    if (pet) useItemOnPet(pet, item);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function useItemOnPet(pet, item) {
+            if (state.inventory[item.id] <= 0) return;
+            
+            const oldRank = getPetStats(pet).rank;
+            state.inventory[item.id]--;
+            
+            let bonus = (item.target === 'any' || item.target === pet.type) ? Math.floor(item.cost / 10) : 5;
+            pet.favorability += bonus;
+            
+            const newRank = getPetStats(pet).rank;
+
+            // Trigger Movement
+            const vis = document.getElementById('pet-visual');
+            if (vis) {
+                vis.classList.remove('joy-wiggle-y');
+                void vis.offsetWidth;
+                vis.classList.add('joy-wiggle-y');
+                setTimeout(() => vis.classList.remove('joy-wiggle-y'), 1500);
+            }
+
+            if (bonus > 8) { 
+                playSFX('coin'); 
+                showBilingualFeedback(pet, item.feedback); 
+            } else { 
+                playSFX('error'); 
+                showBilingualFeedback(pet, "Not for me... 不太喜歡..."); 
+            }
+
+            if (oldRank !== newRank) {
+                playSFX('rescue');
+                const msg = document.getElementById('message-box');
+                msg.textContent = `${pet.name.toUpperCase()} REACHED ${newRank} LEVEL!`;
+                msg.classList.add('bg-yellow-500', 'text-black');
+                setTimeout(() => msg.classList.remove('bg-yellow-500', 'text-black'), 3000);
+            }
+
+            save(); renderSanctuary();
+        }
+
+        function showBilingualFeedback(pet, itemText) {
+            const container = document.getElementById('bubble-container');
+            const phrases = [
+                "You're the best! 你最棒了!",
+                "So happy! 真開心!",
+                "Love you master! 愛你主人!",
+                "Wow! 哇!",
+                "Delicious! 美味!",
+                "Hehe! 嘿嘿!",
+                "Thank you! 謝謝你!",
+                "I feel great! 我感覺很好!",
+                "You're my hero! 你是我的英雄!",
+                "Best day ever! 最好的一天!",
+                "I feel so loved! 我感覺被愛著!",
+                "Wiggle wiggle! 扭一扭!",
+                "I'm your number one fan! 我是你頭號粉絲!",
+                "Keep up the good work! 繼續加油哦!",
+                "Let's play more! 我們再多玩一點!",
+                "You're so smart! 你真聰明!",
+                "Friends forever! 永遠的朋友!",
+                "Purr-fect! 太完美了!",
+                "Wuff-tastic! 太汪了!",
+                "Dragon power! 龍的力量!",
+                "Shark hug! 鯊魚抱抱!",
+                "Sparkle sparkle! 閃亮閃亮!",
+                "I'm dancing with joy! 我在開心地跳舞!",
+                "Better than treasure! 比寶藏還好!",
+                "Legendary master! 傳奇大師!",
+                "My heart is full! 我的心滿滿的!",
+                "Best rescuer ever! 最棒的救援者!",
+                "I feel so strong! 我覺得很有力量!",
+                "You make me so happy! 你讓我好快樂!",
+                "Look at my aura! 看看我的光芒!",
+                "I'm leveling up! 我正在升級!",
+                "You're amazing! 你真了不起!",
+                "Hooray! 萬歲!",
+                "I trust you! 我信任你!",
+                "This is the life! 這才是生活!"
+            ];
+            
+            const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+            const text = `${itemText} ${randomPhrase}`;
+            
+            if (container) {
+                container.innerHTML = `<div class="speech-bubble lowercase tracking-tighter text-sm">${text.toLowerCase()}</div>`;
+                setTimeout(() => { 
+                    if (container && container.querySelector('.speech-bubble')?.textContent.toLowerCase() === text.toLowerCase()) {
+                        container.innerHTML = ''; 
+                    }
+                }, 4000);
+            }
+        }
+
+        function renderBadges() {
+            const grid = document.getElementById('badge-grid');
+            grid.innerHTML = '';
+            if (state.badges.length === 0) {
+                grid.innerHTML = '<p class="text-slate-600 font-bold uppercase mt-10">No badges earned yet. Rescue legendary animals!</p>';
+                return;
+            }
+            state.badges.forEach(b => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col items-center gap-2";
+                div.innerHTML = `
+                    <div class="badge-circle">${b.icon}</div>
+                    <p class="text-[10px] font-black uppercase text-indigo-400">${b.name}</p>
+                    <p class="text-[8px] text-slate-500">${b.date}</p>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-container');
+            if (!container) return; container.innerHTML = '';
+            const categories = ['dog', 'cat', 'dragon', 'shark', 'any'];
+            const labels = { dog: 'Dog Supplies 🐩', cat: 'Cat Supplies 🐈', dragon: 'Dragon Supplies 🦎', shark: 'Shark Supplies 🦈', any: 'General Supplies 📦' };
+            categories.forEach(cat => {
+                const items = shopItems.filter(i => i.target === cat);
+                if (items.length === 0) return;
+                const section = document.createElement('div');
+                section.innerHTML = `<h3 class="text-xl font-black text-white/50 mb-4 border-b border-white/10 pb-2">${labels[cat]}</h3>`;
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4';
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-black/30 p-4 rounded-3xl border-2 border-white/5 flex flex-col items-center text-center hover:border-indigo-500/50 transition-all';
+                    div.innerHTML = `
+                        <span class="text-4xl mb-3">${item.icon}</span>
+                        <h4 class="font-black text-xs uppercase mb-1">${item.name}</h4>
+                        <p class="text-[9px] text-indigo-400 font-bold mb-3">+$${Math.floor(item.cost/10)} Love</p>
+                        <button class="stage-button rounded-xl text-[10px] w-full ${state.coins < item.cost ? 'opacity-30' : ''}" 
+                            onclick="buyItem('${item.id}')" ${state.coins < item.cost ? 'disabled' : ''}>
+                            BUY $${item.cost}
+                        </button>
+                    `;
+                    grid.appendChild(div);
+                });
+                section.appendChild(grid);
+                container.appendChild(section);
+            });
+        }
+
+        window.buyItem = (id) => {
+            const item = shopItems.find(x => x.id === id);
+            if (state.coins >= item.cost) {
+                state.coins -= item.cost;
+                state.inventory[id] = (state.inventory[id] || 0) + 1;
+                playSFX('coin'); save(); renderShop();
+            }
+        };
+
+        function renderShelter() {
+            const grid = document.getElementById('shelter-grid');
+            if (!grid) return; grid.innerHTML = '';
+            
+            const types = ['dog', 'cat', 'dragon', 'shark'];
+            types.forEach(type => {
+                const available = animalTracks[type].find(a => 
+                    !state.ownedPets.some(p => p.name === a.name) && 
+                    !state.badges.some(b => b.name === a.name)
+                );
+
+                if (available) {
+                    const div = document.createElement('div');
+                    div.className = 'bg-black/30 p-8 rounded-3xl border-2 border-white/5 flex flex-col items-center text-center';
+                    div.innerHTML = `
+                        <span class="text-8xl mb-6 drop-shadow-2xl">${available.icon}</span>
+                        <h3 class="text-2xl font-black mb-1 uppercase italic">${available.name}</h3>
+                        <p class="text-indigo-500 text-xs font-black tracking-widest mb-6">${type.toUpperCase()} TRACK</p>
+                        <button class="stage-button bg-rose-600 border-rose-800 shadow-rose-900 rounded-2xl w-full ${state.coins < 3000 ? 'opacity-30' : ''}" 
+                            onclick="rescueTrackPet('${type}')" ${state.coins < 3000 ? 'disabled' : ''}>
+                            RESCUE $3000
+                        </button>
+                    `;
+                    grid.appendChild(div);
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'bg-slate-800/30 p-8 rounded-3xl border-2 border-green-500/20 flex flex-col items-center text-center grayscale opacity-50';
+                    div.innerHTML = `<span class="text-4xl">👑</span><p class="mt-4 font-black">ALL ${type.toUpperCase()}S SAVED!</p>`;
+                    grid.appendChild(div);
+                }
+            });
+        }
+
+        window.rescueTrackPet = (type) => {
+            const available = animalTracks[type].find(a => 
+                !state.ownedPets.some(p => p.name === a.name) && 
+                !state.badges.some(b => b.name === a.name)
+            );
+            if (state.coins >= 3000 && available) {
+                state.coins -= 3000;
+                state.ownedPets.push({ ...available, type, id: Date.now(), favorability: 0 });
+                playSFX('rescue'); save(); renderShelter();
+            }
+        };
+
+        // --- VOCAB ENGINE ---
+        function changeCoins(amt) {
+            state.coins += amt; if (state.coins < 0) state.coins = 0;
+            save();
+            if (amt < 0) {
+                const msg = document.getElementById('message-box');
+                if (msg) {
+                    msg.textContent = `MISTAKE! -${Math.abs(amt)} COINS. STAY FOCUSED!`;
+                    msg.classList.add('bg-red-700');
+                    setTimeout(() => msg.classList.remove('bg-red-700'), 1500);
+                }
+            }
+        }
+
+        function startGame(w, s) {
+            const progress = state.weekProgress[w] || 1;
+            if (s !== progress) return;
+            playSFX('click');
+            const board = document.getElementById('game-board');
+            const data = vocabData[w];
+            board.innerHTML = '';
+            if(s === 1) initStage1(board, data);
+            else if(s === 2) initStage2(board, data);
+            else if(s === 3) initStage3(board, data);
+        }
+
+        function completeStage(s) {
+            if (s === 3) {
+                state.weekProgress[state.currentWeek] = 1;
+                state.totalRoundsFinished++;
+                const bonus = 130 + (state.totalRoundsFinished * 30);
+                state.coins += bonus;
+                const msg = document.getElementById('message-box');
+                msg.textContent = `ROUND CLEAR! BONUS +$${bonus}`;
+                msg.classList.add('bg-green-600');
+                setTimeout(() => msg.classList.remove('bg-green-600'), 2500);
+                playSFX('rescue');
+            } else {
+                state.weekProgress[state.currentWeek] = s + 1;
+                document.getElementById('message-box').textContent = `STAGE ${s} CLEAR! STAGE ${s+1} UNLOCKED.`;
+            }
+            save();
+        }
+
+        function initStage1(el, data) {
+            el.className = 'grid grid-cols-2 gap-6';
+            const items = [...data].sort(() => 0.5 - Math.random()).slice(0, 8);
+            const words = items.map(i => ({...i, t:'w'})).sort(() => 0.5 - Math.random());
+            const icons = items.map(i => ({...i, t:'i'})).sort(() => 0.5 - Math.random());
+            let selected = null;
+            let matchedCount = 0;
+            const make = (d) => {
+                const c = document.createElement('div');
+                c.className = 'card-container connect-card p-6 text-center h-40 flex flex-col items-center justify-center font-black lowercase text-3xl sm:text-4xl';
+                c.textContent = d.t === 'w' ? d.word.toLowerCase() : d.icon;
+                c.onclick = () => {
+                    playSFX('click');
+                    if(selected) {
+                        if(selected.d.word === d.word && selected.d.t !== d.t) {
+                            playSFX('coin'); c.classList.add('matched'); selected.el.classList.add('matched');
+                            changeCoins(15); matchedCount++;
+                            if (matchedCount === 8) setTimeout(() => completeStage(1), 500);
+                        } else { playSFX('error'); changeCoins(-2); }
+                        selected.el.classList.remove('selected'); selected = null;
+                    } else { c.classList.add('selected'); selected = {el:c, d}; }
+                };
+                return c;
+            };
+            const L = document.createElement('div'); L.className='flex flex-col gap-4';
+            const R = document.createElement('div'); R.className='flex flex-col gap-4';
+            words.forEach(w => L.appendChild(make(w)));
+            icons.forEach(i => R.appendChild(make(i)));
+            el.append(L, R);
+        }
+
+        function initStage2(el, data) {
+            el.className = 'grid grid-cols-4 gap-4';
+            const items = [...data].sort(() => 0.5 - Math.random()).slice(0, 6);
+            const cards = [...items.map(i=>({m:i.word,v:i.word.toLowerCase(),t:'w'})), ...items.map(i=>({m:i.word,v:i.keyword.toLowerCase(),t:'k'}))].sort(()=>Math.random()-0.5);
+            let flipped = [];
+            let matchedCount = 0;
+            cards.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'memory-card card-container h-32 relative';
+                div.innerHTML = `<div class="memory-card-back text-4xl bg-indigo-950 flex items-center justify-center rounded-2xl absolute inset-0">?</div>
+                                 <div class="memory-card-content text-[12px] font-black p-2 bg-white text-black flex items-center justify-center rounded-2xl absolute inset-0 hidden lowercase">${c.v}</div>`;
+                div.onclick = () => {
+                    if(flipped.length < 2 && !div.classList.contains('matched')) {
+                        playSFX('click');
+                        div.querySelector('.memory-card-back').classList.add('hidden');
+                        div.querySelector('.memory-card-content').classList.remove('hidden');
+                        flipped.push({el:div, c});
+                        if(flipped.length === 2) {
+                            if(flipped[0].c.m === flipped[1].c.m && flipped[0].c.t !== flipped[1].c.t) {
+                                playSFX('coin'); matchedCount++;
+                                setTimeout(() => { 
+                                    flipped.forEach(f=> { f.el.style.opacity='0.1'; f.el.classList.add('matched'); }); 
+                                    flipped=[]; changeCoins(40); 
+                                    if (matchedCount === 6) completeStage(2);
+                                }, 600);
+                            } else {
+                                playSFX('error'); changeCoins(-2);
+                                setTimeout(() => { flipped.forEach(f=>{
+                                    f.el.querySelector('.memory-card-back').classList.remove('hidden');
+                                    f.el.querySelector('.memory-card-content').classList.add('hidden');
+                                }); flipped=[]; }, 1200);
+                            }
+                        }
+                    }
+                };
+                el.appendChild(div);
+            });
+        }
+
+        function initStage3(el, data) {
+            let s3Idx = 0;
+            let isDone = false;
+            const run = () => {
+                if(s3Idx >= 8) { isDone = true; completeStage(3); return; }
+                const d = data[Math.floor(Math.random() * data.length)];
+                el.className = 'flex flex-col items-center gap-8';
+                el.innerHTML = `<div class="text-9xl">${d.chinese} ${d.icon}</div><div class="text-slate-400 font-bold uppercase italic text-xl">${d.concept}</div>`;
+                const inp = document.createElement('input');
+                inp.className = 'p-6 rounded-2xl text-black text-center text-5xl w-full max-w-xl outline-none border-4 border-indigo-500 font-black lowercase';
+                inp.placeholder = "type word...";
+                inp.onkeyup = (e) => {
+                    if (isDone) return;
+                    if (e.key === 'Enter') {
+                        if(inp.value.toLowerCase().trim() === d.word.toLowerCase()) {
+                            playSFX('coin'); changeCoins(30); s3Idx++; run(); 
+                        } else {
+                            playSFX('error'); changeCoins(-2);
+                            inp.classList.add('border-red-600', 'shake');
+                            setTimeout(() => inp.classList.remove('border-red-600', 'shake'), 500);
+                        }
+                    }
+                };
+                el.appendChild(inp); inp.focus();
+            };
+            run();
+        }
+
+        // --- EXPORT ---
+        window.pickInitialPet = pickInitialPet;
+        window.showView = showView;
+        window.startGame = startGame;
+        window.buyItem = buyItem;
+        window.rescuePet = rescueTrackPet;
+        window.rescueTrackPet = rescueTrackPet;
+        window.getCurrentWeek = () => state.currentWeek;
+        window.onload = load;
+    </script>
+</body>
+</html>

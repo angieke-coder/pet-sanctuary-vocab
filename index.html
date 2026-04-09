@@ -878,31 +878,38 @@
             const cards = [...items.map(i=>({m:i.word,v:i.word.toLowerCase(),t:'w'})), ...items.map(i=>({m:i.word,v:i.keyword.toLowerCase(),t:'k'}))].sort(()=>Math.random()-0.5);
             let flipped = [];
             let matchedCount = 0;
+            
             cards.forEach(c => {
                 const div = document.createElement('div');
-                div.className = 'memory-card card-container h-32 relative';
-                div.innerHTML = `<div class="memory-card-back text-4xl bg-indigo-950 flex items-center justify-center rounded-2xl absolute inset-0">?</div>
-                                 <div class="memory-card-content text-[12px] font-black p-2 bg-white text-black flex items-center justify-center rounded-2xl absolute inset-0 hidden lowercase">${c.v}</div>`;
+                // Use the same styles as stage 1 so they highlight nicely when clicked
+                div.className = 'card-container connect-card h-32 flex items-center justify-center p-2 text-center text-sm font-black lowercase';
+                div.textContent = c.v;
+                
                 div.onclick = () => {
-                    if(flipped.length < 2 && !div.classList.contains('matched')) {
+                    // Make sure it's not already matched, and not already selected
+                    if(flipped.length < 2 && !div.classList.contains('matched') && !div.classList.contains('selected')) {
                         playSFX('click');
-                        div.querySelector('.memory-card-back').classList.add('hidden');
-                        div.querySelector('.memory-card-content').classList.remove('hidden');
+                        div.classList.add('selected'); // Highlight the card
                         flipped.push({el:div, c});
+                        
                         if(flipped.length === 2) {
                             if(flipped[0].c.m === flipped[1].c.m && flipped[0].c.t !== flipped[1].c.t) {
                                 playSFX('coin'); matchedCount++;
-                                setTimeout(() => { 
-                                    flipped.forEach(f=> { f.el.style.opacity='0.1'; f.el.classList.add('matched'); }); 
-                                    flipped=[]; changeCoins(40); 
+                                setTimeout(() => {
+                                    flipped.forEach(f=> { 
+                                        f.el.classList.remove('selected');
+                                        f.el.classList.add('matched'); 
+                                    });
+                                    flipped=[]; changeCoins(40);
                                     if (matchedCount === 6) completeStage(2);
-                                }, 600);
+                                }, 500);
                             } else {
                                 playSFX('error'); changeCoins(-2);
-                                setTimeout(() => { flipped.forEach(f=>{
-                                    f.el.querySelector('.memory-card-back').classList.remove('hidden');
-                                    f.el.querySelector('.memory-card-content').classList.add('hidden');
-                                }); flipped=[]; }, 1200);
+                                setTimeout(() => { 
+                                    // Remove highlight if it's wrong
+                                    flipped.forEach(f => f.el.classList.remove('selected')); 
+                                    flipped=[]; 
+                                }, 800); // Shorter timeout since they don't have to memorize
                             }
                         }
                     }
